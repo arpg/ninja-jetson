@@ -10,6 +10,7 @@
 #include <time.h>   // time calls
 #include <sys/time.h>
 #include <time.h>
+#include <string> 
 
 typedef int ComPortHandle;
 
@@ -22,8 +23,8 @@ struct CommandPacket
     char m_cDelimiter1;
     char m_cDelimiter2;
     char m_cSize;
-    int m_nSteering;
-    int m_nSpeed;
+    int  m_nSteering;
+    int  m_nSpeed;
 };
 
 #pragma pack(1)
@@ -41,55 +42,58 @@ struct SensorPacket
     short int   Mag_x;
     short int   Mag_y;
     short int   Mag_z;
-    int   Enc_LB;
-    int   Enc_LF;
-    int   Enc_RB;
-    int   Enc_RF;
+    int         Enc_LB;
+    int         Enc_LF;
+    int         Enc_RB;
+    int         Enc_RF;
+    short int   ADC_Steer;
     short int   ADC_LB;
-    short int   ADC_LF_yaw;
-    short int   ADC_LF_rol;
+    short int   ADC_LF;
     short int   ADC_RB;
-    short int   ADC_RF_yaw;
-    short int   ADC_RF_rol;
+    short int   ADC_RF;
 };
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 class FtdiDriver
 {
 
 public:
-    ///////////////////////////////////////////////////////////////////////////////
-    FtdiDriver() : m_bIsConnected(false)
-    {
-    }
+    FtdiDriver() : m_bIsConnected(false), m_bSimulateConnection(false) { }
 
-    ///////////////////////////////////////////////////////////////////////////////
     ~FtdiDriver()
     {
-        if(m_bIsConnected){
-            _CloseComPort(m_PortHandle);
-        }
+      if(m_bIsConnected && !m_bSimulateConnection ){
+        _CloseComPort(m_PortHandle);
+      }
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
-    bool Connect(const char *path)
+    bool Connect(const std::string& path)
     {
-        //open the given path
-        m_PortHandle = _OpenComPort(path,B115200);
+      if( path == "sim"){
+        printf("Simulating serial connection\n");
+        m_bSimulateConnection = true;
+        return true;
+      }
 
-        if(m_PortHandle <= 0){
-            printf("Failed to open at 115200bps, aborting...\n");
-        } else {
-            m_bIsConnected = true;
-        }
-        return m_bIsConnected;
+      //open the given path
+      m_PortHandle = _OpenComPort(path.c_str(),B115200);
+
+      if(m_PortHandle <= 0){
+        printf("Failed to open at 115200bps, aborting...\n");
+      } else {
+        m_bIsConnected = true;
+      }
+      return m_bIsConnected;
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
-    void SendCommandPacket(const int nSteering, const int nSpeed)
+    void SendCommandPacket( const int nSpeed, const int nSteering )
     {
+      if( m_bSimulateConnection ){
+        return;
+      }
+
+//    double dAccel = std::min(500.0,std::max(0.0,cmd.accel()));
+//    double dPhi = std::min(500.0,std::max(0.0,cmd.phi()));
         CommandPacket Pkt;
         Pkt.m_cDelimiter1 = FTDI_PACKET_DELIMITER1;
         Pkt.m_cDelimiter2 = FTDI_PACKET_DELIMITER2;
@@ -99,17 +103,28 @@ public:
         _WriteComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(CommandPacket));
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
     int ReadSensorPacket(SensorPacket& Pkt)
     {
-        return _ReadComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(SensorPacket));
+      if( m_bSimulateConnection ){
+        static SensorPacket state = {};
+        Pkt = state;
+        state.Enc_LF++;
+        state.Enc_LB++;
+        state.Enc_RF++;
+        state.Enc_RB++;
+        state.ADC_Steer = 5.0*sin(0.01*state.Enc_LF);
+        state.ADC_LF = 10.0*sin(0.01*state.Enc_LF);
+        state.ADC_LB = 10.0*sin(0.01*state.Enc_LF);
+        state.ADC_RF = 10.0*sin(0.01*state.Enc_LF);
+        state.ADC_RB = 10.0*sin(0.01*state.Enc_LF);
+        return true;
+      }
+      return _ReadComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(SensorPacket));
     }
 
 
 private:
 
-    ///////////////////////////////////////////////////////////////////////////////
     void _CloseComPort(ComPortHandle comPort)
     {
       close(comPort);
@@ -117,7 +132,6 @@ private:
 
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
     int _ReadComPort(ComPortHandle comPort, unsigned char* bytes, int bytesToRead)
     {
       int bytesRead = read(comPort, bytes, bytesToRead);
@@ -136,7 +150,6 @@ private:
 
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
     int _WriteComPort(ComPortHandle comPort, unsigned char* bytesToWrite, int size)
     {
         int bytesWritten = write(comPort, bytesToWrite, size);
@@ -144,8 +157,6 @@ private:
         return bytesWritten;
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////
     int _Purge(ComPortHandle comPortHandle)
     {
       if (tcflush(comPortHandle,TCIOFLUSH)==-1){
@@ -157,7 +168,6 @@ private:
       return true;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
     ComPortHandle _OpenComPort(const char* comPortPath,const int baudRate = B115200)
     {
       struct termios options;
@@ -225,5 +235,5 @@ private:
 private:
     bool            m_bIsConnected;
     ComPortHandle   m_PortHandle;
-
+    bool            m_bSimulateConnection;
 };

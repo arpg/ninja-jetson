@@ -1,121 +1,88 @@
 #include <stdio.h>
+#include <string>
+#include <Node/Node.h>
 
-#include <HAL/IMU/IMUDevice.h>
-#include <PbMsgs/Imu.pb.h>
-
-#include "Command.pb.h"
+#include "NinjaMsgs.pb.h"
 #include "FtdiDriver.h"
-#include "Node.h"
-
+#include "GetPot"
 
 FtdiDriver  g_FtdiDriver;
+node::node  nc_node;
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-inline double Tic()
+NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
 {
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-    return tv.tv_sec + 1e-6 * (tv.tv_usec);
-}
+  NinjaStateMsg msg;
+  msg.set_m_cdelimiter1( p.m_cDelimiter1 );
+  msg.set_m_cdelimiter2( p.m_cDelimiter2 );
+  msg.set_m_csize( p.m_cSize );
+  msg.set_acc_x( p.Acc_x );
+  msg.set_acc_y( p.Acc_y );
+  msg.set_acc_z( p.Acc_z );
+  msg.set_gyro_x( p.Gyro_x );
+  msg.set_gyro_y( p.Gyro_y );
+  msg.set_gyro_z( p.Gyro_z );
+  msg.set_mag_x( p.Mag_x );
+  msg.set_mag_y( p.Mag_y );
+  msg.set_mag_z( p.Mag_z );
+  msg.set_enc_lb( p.Enc_LB );
+  msg.set_enc_lf( p.Enc_LF );
+  msg.set_enc_rb( p.Enc_RB );
+  msg.set_enc_rf( p.Enc_RF );
+  msg.set_adc_steer( p.ADC_Steer );
+  msg.set_adc_lb( p.ADC_LB );
+  msg.set_adc_lf( p.ADC_LF );
+  msg.set_adc_rb( p.ADC_RB );
+  msg.set_adc_rf( p.ADC_RF );
 
+  return msg;
+};
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// RPC call which handles setting servo positions
-void ProgramControlRpc( CommandMsg& Req, CommandReply& /*Rep*/, void* /*userData*/ )
+int main( int argc, char** argv )
 {
-    printf("Received a=%.2f and p=%.2f\n",Req.accel(),Req.phi());
-    fflush(stdout);
-    double dAccel = std::min(500.0,std::max(0.0,Req.accel()));
-    double dPhi = std::min(500.0,std::max(0.0,Req.phi()));
-    g_FtdiDriver.SendCommandPacket(dPhi,dAccel);
-}
+  GetPot cl(argc,argv);
+  std::string dev = cl.follow("/dev/cu.usbserial-DA009KYM","--dev");
 
-rpg::Node Relay(5001);
+  nc_node.init("nc_node");
+
+  printf("Connecting to FTDI com port '%s'...\n", dev.c_str() );
+  g_FtdiDriver.Connect(dev);
+
+  // subscribe to the ninja_command topic
+  nc_node.subscribe("ninja_commander/command");
+
+  // advertise that we will transmit state data
+  if( nc_node.advertise("state") == false ) {
+    printf("Error setting publisher.\n");
+  }
 
 
-void IMU_Handler(pb::ImuMsg& IMUdata)
-{
-    if ( Relay.Write( "IMU", IMUdata ) == false ) {
-        printf("Error sending message.\n");
+  for( size_t ii = 0; ; ++ii ) {
+    if( ii % 1000 == 0 ) {
+      printf(".");
+      fflush(stdout);
     }
 
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-int main()
-{
-    printf("Connecting to FTDI com port...\n");
-    g_FtdiDriver.Connect("/dev/cu.usbserial-DA009KYM");
-
-    printf("Initializing RELAY node on port 5001....\n");
-//    hal::IMU imu("microstrain://");
-//    imu.RegisterIMUDataCallback(IMU_Handler);
-
-    // set up a publisher
-    if( Relay.Register("ControlRpc", &ProgramControlRpc, NULL) == false ) {
-        printf("Error setting RPC callback.\n");
+    // read from the car's microcontroller
+    SensorPacket state;
+    if( g_FtdiDriver.ReadSensorPacket(state) == 0 ) {
+      continue;
+    }
+    // package and send our state protobuf
+    NinjaStateMsg state_msg = BuildNinjaStateMsg( state );
+    if ( nc_node.publish( "state", state_msg ) == false ) {
+      printf("Error sending message.\n");
     }
 
-    Relay.Subscribe("PCNode","localhost:6002");
-
-    // set up a publisher
-    if( Relay.Publish("IMU", 5002) == false ) {
-        printf("Error setting publisher.\n");
+    // let's see what the controller is telling us to do
+    NinjaCommandMsg cmd;
+    if( nc_node.receive("ninja_commander/command", cmd) ){
+      printf("Received a=%.2f and p=%.2f\n", cmd.speed(), cmd.turnrate() );
+      // relay command to the car 
+      g_FtdiDriver.SendCommandPacket( cmd.speed(), cmd.turnrate() );
     }
+    sleep(1);
+  }
 
-    for( size_t ii = 0; ; ++ii ) {
-
-        SensorPacket Pkt;
-        if( g_FtdiDriver.ReadSensorPacket(Pkt) == 0 ) {
-            continue;
-        }
-        if( ii % 1000 == 0 ) {
-            printf(".");
-            fflush(stdout);
-        }
-
-//        printf("AX: %6d AY: %6d AZ: %6d - GX: %6d GY: %6d GZ: %6d - MX: %6d MY: %6d MZ: %6d - ADC_LF_Y: %6d ADC_RF_Y: %6d \n",
-//               Pkt.Acc_x,Pkt.Acc_y,Pkt.Acc_z,Pkt.Gyro_x,Pkt.Gyro_y,Pkt.Gyro_z,Pkt.Mag_x,Pkt.Mag_y,Pkt.Mag_z,Pkt.ADC_LF_yaw,Pkt.ADC_RF_yaw);
-//        fflush(stdout);
-        CommandMsg ControlMsg;
-        CommandReply Rep;
-        Relay.ReadBlocking("PCNode",ControlMsg);
-        ProgramControlRpc(ControlMsg,Rep,NULL);
-
-        pb::ImuMsg pbMsg;
-
-        pb::VectorMsg* pbVec = pbMsg.mutable_accel();
-        pbVec->add_data(Pkt.Acc_x);
-        pbVec->add_data(Pkt.Acc_y);
-        pbVec->add_data(Pkt.Acc_z);
-
-        pbVec = pbMsg.mutable_gyro();
-        pbVec->add_data(Pkt.Gyro_x);
-        pbVec->add_data(Pkt.Gyro_y);
-        pbVec->add_data(Pkt.Gyro_z);
-
-        pbVec = pbMsg.mutable_mag();
-        pbVec->add_data(Pkt.Mag_x);
-        pbVec->add_data(Pkt.Mag_y);
-        pbVec->add_data(Pkt.Mag_z);
-
-//        Msg.set_encoderl(Pkt.Enc_LB);
-//        Msg.set_encoderr(Pkt.Enc_RB);
-//        Msg.set_timer(Tic());
-        if ( Relay.Write( "IMU", pbMsg ) == false ) {
-            printf("Error sending message.\n");
-        }
-
-//        sleep(1);ls
-
-
-    }
-
-
-    return 0;
+  return 0;
 }
 

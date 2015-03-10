@@ -1,3 +1,5 @@
 ninja-jetson
 ============
-Ninja on board processing program
+Code to talk to the Ninja control board.
+Publishes vehicle state.
+Receives vehicle commands.
