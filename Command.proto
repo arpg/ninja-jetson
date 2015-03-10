@@ -1,8 +1,32 @@
-message CommandMsg {
-  required double Accel = 1;
-  required double Phi = 2;
+message NinjaSensorMsg 
+{
+    required byte    m_cDelimiter1 1;
+    required byte    m_cDelimiter2 2;
+    required byte    m_cSize       3;
+    required int16   Acc_x         4;
+    required int16   Acc_y         5;
+    required int16   Acc_z         6;
+    required int16   Gyro_x        7;
+    required int16   Gyro_y        8;
+    required int16   Gyro_z        9;
+    required int16   Mag_x        10;
+    required int16   Mag_y        11;
+    required int16   Mag_z        12;
+    required int32   Enc_LB       13;
+    required int32   Enc_LF       14;
+    required int32   Enc_RB       15;
+    required int32   Enc_RF       16;
+    required int16   ADC_LB       17;
+    required int16   ADC_LF_yaw   18;
+    required int16   ADC_LF_rol   19;
+    required int16   ADC_RB       20;
+    required int16   ADC_RF_yaw   21;
+    required int16   ADC_RF_rol   22;
 }
 
-message CommandReply {
+message NinjaCommandReply 
+{
+   required double  speed     1;
+   required double  turnrate  2;
 }
 
