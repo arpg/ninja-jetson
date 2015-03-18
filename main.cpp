@@ -7,7 +7,7 @@
 #include "GetPot"
 
 FtdiDriver  g_FtdiDriver;
-node::node  nc_node;
+//node::node  nc_node;
 
 NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
 {
@@ -40,48 +40,49 @@ NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
 int main( int argc, char** argv )
 {
   GetPot cl(argc,argv);
-  std::string dev = cl.follow("/dev/cu.usbserial-DA009KYM","--dev");
+  std::string dev = cl.follow("/dev/cu.usbserial-AH026SOB","--dev");
 
-  nc_node.init("nc_node");
+  //nc_node.init("nc_node");
 
   printf("Connecting to FTDI com port '%s'...\n", dev.c_str() );
-  g_FtdiDriver.Connect(dev);
-
+  //g_FtdiDriver.Connect(dev);
+  g_FtdiDriver.Connect("/dev/cu.usbserial-AH026SOB");
   // subscribe to the ninja_command topic
-  nc_node.subscribe("ninja_commander/command");
+  //nc_node.subscribe("ninja_commander/command");
 
   // advertise that we will transmit state data
-  if( nc_node.advertise("state") == false ) {
-    printf("Error setting publisher.\n");
-  }
+  //if( nc_node.advertise("state") == false ) {
+  //  printf("Error setting publisher.\n");
+  //}
 
 
-  for( size_t ii = 0; ; ++ii ) {
-    if( ii % 1000 == 0 ) {
-      printf(".");
-      fflush(stdout);
-    }
+//  for( size_t ii = 0; ; ++ii ) {
+//    if( ii % 1000 == 0 ) {
+//      printf(".");
+//      fflush(stdout);
+//    }
 
     // read from the car's microcontroller
     SensorPacket state;
-    if( g_FtdiDriver.ReadSensorPacket(state) == 0 ) {
-      continue;
-    }
+//    if( g_FtdiDriver.ReadSensorPacket(state) == 0 ) {
+//      continue;
+//    }
     // package and send our state protobuf
-    NinjaStateMsg state_msg = BuildNinjaStateMsg( state );
-    if ( nc_node.publish( "state", state_msg ) == false ) {
-      printf("Error sending message.\n");
-    }
+   // NinjaStateMsg state_msg = BuildNinjaStateMsg( state );
+   // if ( nc_node.publish( "state", state_msg ) == false ) {
+   //   printf("Error sending message.\n");
+   // }
 
     // let's see what the controller is telling us to do
-    NinjaCommandMsg cmd;
-    if( nc_node.receive("ninja_commander/command", cmd) ){
-      printf("Received a=%.2f and p=%.2f\n", cmd.speed(), cmd.turnrate() );
+    //NinjaCommandMsg cmd;
+    //if( nc_node.receive("ninja_commander/command", cmd) ){
+    //  printf("Received a=%.2f and p=%.2f\n", cmd.speed(), cmd.turnrate() );
       // relay command to the car 
-      g_FtdiDriver.SendCommandPacket( cmd.speed(), cmd.turnrate() );
-    }
-    sleep(1);
-  }
+      //g_FtdiDriver.SendCommandPacket( cmd.speed(), cmd.turnrate() );
+      g_FtdiDriver.SendCommandPacket( 123, 45 );
+    //}
+    sleep(500);
+//  }
 
   return 0;
 }
