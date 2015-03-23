@@ -69,7 +69,7 @@ int main( int argc, char** argv )
 //      printf("Mag_x: %d  Mag_y: %d  Mag_z: %d \n",state.Mag_x,state.Mag_y,state.Mag_z);
 //      printf("Enc_lb: %d  Enc_lf: %d  Enc_rb: %d  Enc_rf: %d \n",state.Enc_LB,state.Enc_LF,state.Enc_RB,state.Enc_RF);
 //      printf("adc_steer: %d  adc_lb: %d  adc_lf: %d  adc_rb: %d  adc_rf: %d \n", state.ADC_Steer,state.ADC_LB,state.ADC_LF,state.ADC_RB,state.ADC_RF);
-    }
+//    }
 
     // package and send our state protobuf
     NinjaStateMsg state_msg = BuildNinjaStateMsg( state );

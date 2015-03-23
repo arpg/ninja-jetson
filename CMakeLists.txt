@@ -41,15 +41,3 @@ target_link_libraries( nc_node
     ${Node_LIBRARIES} 
     ${MINIGLOG_LIBRARIES} 
     )
-
-#add_executable( ninja_commander ninja_commander.cpp ${PROTO_SRCS} )
-#target_link_libraries( ninja_commander
-#    ${ZeroMQ_LIBRARIES}
-#    ${ZeroMQPP_LIBRARIES}
-#    ${HAL_LIBRARIES}
-#    ${PbMsgs_LIBRARIES}
-#    ${PROTOBUF_LIBRARIES} 
-#    ${Node_LIBRARIES} 
-#    ${MINIGLOG_LIBRARIES} 
-#    )
-
