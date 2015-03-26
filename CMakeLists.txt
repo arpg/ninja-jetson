@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 2.8 )
 
-project( nc_node )
+project( ninja_node )
 
 # set C++11 flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wextra")
@@ -28,11 +28,11 @@ include_directories( ${CMAKE_BINARY_DIR} ) # for protobufs
 PROTOBUF_GENERATE_CPP( PROTO_SRCS PROTO_HDRS NinjaMsgs.proto )
 
 set( HDRS ${PROTO_HDRS} FtdiDriver.h )
-set( SRCS main.cpp ${PROTO_SRCS} )
+set( SRCS ninja_node.cpp ${PROTO_SRCS} )
 
 
-add_executable( nc_node ${HDRS} ${SRCS} )
-target_link_libraries( nc_node 
+add_executable( ${PROJECT_NAME} ${HDRS} ${SRCS} )
+target_link_libraries( ${PROJECT_NAME}
     ${ZeroMQ_LIBRARIES}
     ${ZeroMQPP_LIBRARIES}
     ${HAL_LIBRARIES}
