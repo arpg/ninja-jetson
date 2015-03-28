@@ -5,6 +5,7 @@
 #include "NinjaMsgs.pb.h"
 #include "FtdiDriver.h"
 #include "GetPot"
+#include <cstring>
 
 bool DEBUG = false;
 
@@ -17,9 +18,6 @@ NinjaStateMsg state_msg;
 NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
 {
   NinjaStateMsg msg;
-  msg.set_m_cdelimiter1( p.m_cDelimiter1 );
-  msg.set_m_cdelimiter2( p.m_cDelimiter2 );
-  msg.set_m_csize( p.m_cSize );
   msg.set_acc_x( p.Acc_x );
   msg.set_acc_y( p.Acc_y );
   msg.set_acc_z( p.Acc_z );
@@ -46,7 +44,7 @@ int main( int argc, char** argv )
 {
   GetPot cl(argc,argv);
   std::string dev = cl.follow("/dev/ttyUSB0","--dev");
-  bool bNodeSubsribed = false;
+  bool bNodeSubscribed = false;
 
   ninja_node.init("ninja_node");
 
@@ -61,13 +59,14 @@ int main( int argc, char** argv )
   for( size_t ii = 0; ; ++ii ) {
 
     // read from the car's microcontroller
-    SensorPacket state;
+    SensorPacket state,new_state;
 
     //Check package contents received over usb
-    if( g_FtdiDriver.ReadSensorPacket(state) == 0 ){
+    if( g_FtdiDriver.ReadSensorPacket(new_state) == 0 ){
       printf("Ftdi read returned 0\n");
     }else
     {
+      memmove(&state,&new_state,sizeof(SensorPacket));
       if(DEBUG){
         printf("*********************************************************\n");
         printf("acc_x: %d  acc_y: %d  acc_z: %d \n",state.Acc_x,state.Acc_y,state.Acc_z);
@@ -79,12 +78,11 @@ int main( int argc, char** argv )
     }
 
     // subscribe to the ninja_command topic
-    if( !bNodeSubsribed ){
+    if( !bNodeSubscribed ){
       if( ninja_node.subscribe("commander_node/command") == false ){
         printf("Error subscribing to commander_node/command.\n");
-      }else{
-        bNodeSubsribed = true;
       }
+      bNodeSubscribed = true;
     }
     // package and send our state protobuf
     NinjaStateMsg state_msg = BuildNinjaStateMsg( state );
@@ -95,15 +93,18 @@ int main( int argc, char** argv )
     // let's see what the controller is telling us to do
     NinjaCommandMsg cmd;
     if( ninja_node.receive("commander_node/command", cmd) ){
-      if( DEBUG ){
-        printf("Received a=%.2f and p=%.2f\n", cmd.speed(), cmd.turnrate() );
-      }
+//      if( DEBUG ){
+        printf("Received acc=%.2f and phi=%.2f\n", cmd.speed(), cmd.turnrate() );
+//      }
       // relay command to the car
-      g_FtdiDriver.SendCommandPacket( cmd.speed(), cmd.turnrate() );
+      g_FtdiDriver.SendCommandPacket( (float)cmd.speed(), (float)cmd.turnrate() );
+    }else
+    {
+	bNodeSubscribed = false;
     }
 
     // Sleep
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
   return 0;

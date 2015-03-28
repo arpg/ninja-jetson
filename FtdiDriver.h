@@ -23,8 +23,10 @@ struct CommandPacket
     char m_cDelimiter1;
     char m_cDelimiter2;
     char m_cSize;
-    int  m_nSteering;
-    int  m_nSpeed;
+    float  m_nSteering;
+    float  m_nSpeed;
+    unsigned short int m_nChksum;
+//    char dummy;
 };
 
 #pragma pack(1)
@@ -51,6 +53,7 @@ struct SensorPacket
     short int   ADC_LF;
     short int   ADC_RB;
     short int   ADC_RF;
+    unsigned short int chksum;
 };
 
 
@@ -86,7 +89,7 @@ public:
       return m_bIsConnected;
     }
 
-    void SendCommandPacket( const int nSpeed, const int nSteering )
+    void SendCommandPacket( const float nSpeed, const float nSteering )
     {
       if( m_bSimulateConnection ){
         return;
@@ -98,14 +101,17 @@ public:
         Pkt.m_cDelimiter1 = FTDI_PACKET_DELIMITER1;
         Pkt.m_cDelimiter2 = FTDI_PACKET_DELIMITER2;
         Pkt.m_cSize = sizeof(CommandPacket);
-        Pkt.m_nSpeed = nSpeed;
+ 	Pkt.m_nSpeed = nSpeed;
         Pkt.m_nSteering = nSteering;
+	Pkt.m_nChksum = _CalcChksum((unsigned char *)(&Pkt),sizeof(CommandPacket)-2); 
+        //printf("\n\n checksum isssss ::::: %d  -   %d    ,   %d\n\n",Pkt.m_nChksum,(unsigned char)(Pkt.m_nChksum & 0xFF),(unsigned char)((Pkt.m_nChksum >> 8)& 0xFF));
+        //printf("nSpeed: %f   nSteering: %f \n",Pkt.m_nSpeed, Pkt.m_nSteering);
         _WriteComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(CommandPacket));
     }
 
     int ReadSensorPacket(SensorPacket& Pkt)
     {
-      if( m_bSimulateConnection ){
+/*      if( m_bSimulateConnection ){
         static SensorPacket state = {};
         Pkt = state;
         state.Enc_LF++;
@@ -119,11 +125,38 @@ public:
         state.ADC_RB = 10.0*sin(0.01*state.Enc_LF);
         return true;
       }
-      return _ReadComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(SensorPacket));
+*/
+      int bytesRead =  _ReadComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(SensorPacket));
+      if( bytesRead && _CheckChksum((unsigned char *)(&Pkt),sizeof(SensorPacket)-2,Pkt.chksum))
+	return bytesRead;
+      else
+	return 0;
     }
 
 
 private:
+    
+    unsigned short int _CalcChksum(unsigned char* _data, int packDataSize)
+    {
+	unsigned short int sum = 0;
+	for( int ii=0 ; ii<packDataSize ; ii++ )
+		sum += _data[ii];
+	return sum;
+    }
+
+    bool _CheckChksum(unsigned char* _data, int bytesReceived, unsigned short int RecChksum)
+    {
+	unsigned short int sum = 0;
+	for( int ii=0 ; ii<bytesReceived ; ii++ ){
+		sum += _data[ii];
+	}
+	if( RecChksum == sum ){
+		return true;
+	}else{
+		printf("Wrong Checksum !!!   Calc: %d    Rec:%d\n",sum,RecChksum);
+		return false;
+	}
+    }
 
     void _CloseComPort(ComPortHandle comPort)
     {
@@ -135,17 +168,26 @@ private:
     int _ReadComPort(ComPortHandle comPort, unsigned char* bytes, int bytesToRead)
     {
       int bytesRead = read(comPort, bytes, bytesToRead);
+      
+//      printf("bitesRead was: %d\n",bytesRead);
+//      for(int jj=0;jj<bytesRead;jj++)
+//   	printf(" %d,",bytes[jj]);
+//      printf("\n********************\n");
 
       // align
       int ii = 0;
       while( bytes[ii] != FTDI_PACKET_DELIMITER1 && bytes[ii+1] != FTDI_PACKET_DELIMITER2 ) {
           ii++;
       }
+//      printf("  ii is: %d  ",ii);
       if( ii != 0 ) {
           std::cout << "LOSING PACKET!" << std::endl;
           bytesRead = read(comPort, bytes, ii);
+//          for(int jj=0;jj<bytesRead;jj++)
+//              printf(" %d,",bytes[jj]);
+//          printf("\n********************\n");
+	return 0;
       }
-
       return bytesRead;
 
     }
