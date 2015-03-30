@@ -104,7 +104,7 @@ int main( int argc, char** argv )
     }
 
     // Sleep
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   return 0;
