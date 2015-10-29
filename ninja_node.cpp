@@ -56,6 +56,7 @@ int main( int argc, char** argv )
     printf("Error setting publisher.\n");
   }
 
+float a=0;
   for( size_t ii = 0; ; ++ii ) {
 
     // read from the car's microcontroller
@@ -74,6 +75,7 @@ int main( int argc, char** argv )
         printf("Mag_x: %d  Mag_y: %d  Mag_z: %d \n",state.Mag_x,state.Mag_y,state.Mag_z);
         printf("Enc_lb: %d  Enc_lf: %d  Enc_rb: %d  Enc_rf: %d \n",state.Enc_LB,state.Enc_LF,state.Enc_RB,state.Enc_RF);
         printf("adc_steer: %d  adc_lb: %d  adc_lf: %d  adc_rb: %d  adc_rf: %d \n", state.ADC_Steer,state.ADC_LB,state.ADC_LF,state.ADC_RB,state.ADC_RF);
+        printf("time: %d",state.timestamp);
       }
     }
 
@@ -97,14 +99,18 @@ int main( int argc, char** argv )
         printf("Received acc=%.2f and phi=%.2f\n", cmd.speed(), cmd.turnrate() );
 //      }
       // relay command to the car
-      g_FtdiDriver.SendCommandPacket( (float)cmd.speed(), (float)cmd.turnrate() );
+      g_FtdiDriver.SendCommandPacket( cmd.speed() , cmd.turnrate() );
     }else
     {
 	bNodeSubscribed = false;
     }
 
+//	if(a<1)
+//		a += 0.001;
+//	else
+//		a = 0;
     // Sleep
-//    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+   // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   return 0;

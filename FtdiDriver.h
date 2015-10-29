@@ -25,8 +25,8 @@ struct CommandPacket
     char m_cSize;
     float  m_nSteering;
     float  m_nSpeed;
+    char timestamp;
     unsigned short int m_nChksum;
-//    char dummy;
 };
 
 #pragma pack(1)
@@ -53,6 +53,7 @@ struct SensorPacket
     short int   ADC_LF;
     short int   ADC_RB;
     short int   ADC_RF;
+    char timestamp;
     unsigned short int chksum;
 };
 
@@ -97,12 +98,13 @@ public:
 
 //    double dAccel = std::min(500.0,std::max(0.0,cmd.accel()));
 //    double dPhi = std::min(500.0,std::max(0.0,cmd.phi()));
-        CommandPacket Pkt;
+        static CommandPacket Pkt;
         Pkt.m_cDelimiter1 = FTDI_PACKET_DELIMITER1;
         Pkt.m_cDelimiter2 = FTDI_PACKET_DELIMITER2;
         Pkt.m_cSize = sizeof(CommandPacket);
  	Pkt.m_nSpeed = nSpeed;
         Pkt.m_nSteering = nSteering;
+        Pkt.timestamp++;
 	Pkt.m_nChksum = _CalcChksum((unsigned char *)(&Pkt),sizeof(CommandPacket)-2); 
         //printf("\n\n checksum isssss ::::: %d  -   %d    ,   %d\n\n",Pkt.m_nChksum,(unsigned char)(Pkt.m_nChksum & 0xFF),(unsigned char)((Pkt.m_nChksum >> 8)& 0xFF));
         //printf("nSpeed: %f   nSteering: %f \n",Pkt.m_nSpeed, Pkt.m_nSteering);
