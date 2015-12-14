@@ -1,60 +1,62 @@
 #include <stdio.h>
 #include <string>
-#include <Node/Node.h>
+//#include <Node/Node.h>
 
 #include "NinjaMsgs.pb.h"
 #include "FtdiDriver.h"
-#include "GetPot"
+//#include "GetPot"
 #include <cstring>
 
-bool DEBUG = false;
+
+bool DEBUG = true;
 
 FtdiDriver  g_FtdiDriver;
-node::node  ninja_node;
-NinjaCommandMsg cmd;
-NinjaStateMsg state_msg;
+//node::node  ninja_node;
+//NinjaCommandMsg cmd;
+//NinjaStateMsg state_msg;
 
 
-NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
-{
-  NinjaStateMsg msg;
-  msg.set_acc_x( p.Acc_x );
-  msg.set_acc_y( p.Acc_y );
-  msg.set_acc_z( p.Acc_z );
-  msg.set_gyro_x( p.Gyro_x );
-  msg.set_gyro_y( p.Gyro_y );
-  msg.set_gyro_z( p.Gyro_z );
-  msg.set_mag_x( p.Mag_x );
-  msg.set_mag_y( p.Mag_y );
-  msg.set_mag_z( p.Mag_z );
-  msg.set_enc_lb( p.Enc_LB );
-  msg.set_enc_lf( p.Enc_LF );
-  msg.set_enc_rb( p.Enc_RB );
-  msg.set_enc_rf( p.Enc_RF );
-  msg.set_adc_steer( p.ADC_Steer );
-  msg.set_adc_lb( p.ADC_LB );
-  msg.set_adc_lf( p.ADC_LF );
-  msg.set_adc_rb( p.ADC_RB );
-  msg.set_adc_rf( p.ADC_RF );
+//NinjaStateMsg BuildNinjaStateMsg( const SensorPacket& p )
+//{
+//  NinjaStateMsg msg;
+//  msg.set_acc_x( p.Acc_x );
+//  msg.set_acc_y( p.Acc_y );
+//  msg.set_acc_z( p.Acc_z );
+//  msg.set_gyro_x( p.Gyro_x );
+//  msg.set_gyro_y( p.Gyro_y );
+//  msg.set_gyro_z( p.Gyro_z );
+//  msg.set_mag_x( p.Mag_x );
+//  msg.set_mag_y( p.Mag_y );
+//  msg.set_mag_z( p.Mag_z );
+//  msg.set_enc_lb( p.Enc_LB );
+//  msg.set_enc_lf( p.Enc_LF );
+//  msg.set_enc_rb( p.Enc_RB );
+//  msg.set_enc_rf( p.Enc_RF );
+//  msg.set_adc_steer( p.ADC_Steer );
+//  msg.set_adc_lb( p.ADC_LB );
+//  msg.set_adc_lf( p.ADC_LF );
+//  msg.set_adc_rb( p.ADC_RB );
+//  msg.set_adc_rf( p.ADC_RF );
 
-  return msg;
-}
+//  return msg;
+//}
 
 int main( int argc, char** argv )
 {
-  GetPot cl(argc,argv);
-  std::string dev = cl.follow("/dev/ttyUSB0","--dev");
-  bool bNodeSubscribed = false;
+//  GetPot cl(argc,argv);
+//  std::string dev = cl.follow("/dev/ttyUSB0","--dev");
+  std::string dev = "/dev/cu.usbserial-AH026SOB";
+//  bool bNodeSubscribed = false;
 
-  ninja_node.init("ninja_node");
+//  ninja_node.init("ninja_node");
 
   printf("Connecting to FTDI com port '%s'...\n", dev.c_str() );
   g_FtdiDriver.Connect(dev);
 
   // advertise that we will transmit state data
-  if( ninja_node.advertise("state") == false ) {
-    printf("Error setting publisher.\n");
-  }
+//  if( ninja_node.advertise("state") == false ) {
+//    printf("Error setting publisher.\n");
+//  }
 
   for( size_t ii = 0; ; ++ii ) {
 
@@ -76,7 +78,7 @@ int main( int argc, char** argv )
         printf("adc_steer: %d  adc_lb: %d  adc_lf: %d  adc_rb: %d  adc_rf: %d \n", state.ADC_Steer,state.ADC_LB,state.ADC_LF,state.ADC_RB,state.ADC_RF);
       }
     }
-
+/*
     // subscribe to the ninja_command topic
     if( !bNodeSubscribed ){
       if( ninja_node.subscribe("commander_node/command") == false ){
@@ -102,7 +104,7 @@ int main( int argc, char** argv )
     {
 	bNodeSubscribed = false;
     }
-
+*/
     // Sleep
 //    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }

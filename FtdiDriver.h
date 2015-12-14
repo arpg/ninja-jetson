@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <string> 
+#include <iostream>
 
 typedef int ComPortHandle;
 
@@ -111,26 +112,12 @@ public:
 
     int ReadSensorPacket(SensorPacket& Pkt)
     {
-/*      if( m_bSimulateConnection ){
-        static SensorPacket state = {};
-        Pkt = state;
-        state.Enc_LF++;
-        state.Enc_LB++;
-        state.Enc_RF++;
-        state.Enc_RB++;
-        state.ADC_Steer = 5.0*sin(0.01*state.Enc_LF);
-        state.ADC_LF = 10.0*sin(0.01*state.Enc_LF);
-        state.ADC_LB = 10.0*sin(0.01*state.Enc_LF);
-        state.ADC_RF = 10.0*sin(0.01*state.Enc_LF);
-        state.ADC_RB = 10.0*sin(0.01*state.Enc_LF);
-        return true;
-      }
-*/
+      std::cout << "SensorPackSize=" << sizeof(SensorPacket) << std::endl;
       int bytesRead =  _ReadComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(SensorPacket));
       if( bytesRead && _CheckChksum((unsigned char *)(&Pkt),sizeof(SensorPacket)-2,Pkt.chksum))
-	return bytesRead;
+        return bytesRead;
       else
-	return 0;
+        return 0;
     }
 
 
@@ -146,16 +133,16 @@ private:
 
     bool _CheckChksum(unsigned char* _data, int bytesReceived, unsigned short int RecChksum)
     {
-	unsigned short int sum = 0;
-	for( int ii=0 ; ii<bytesReceived ; ii++ ){
-		sum += _data[ii];
-	}
-	if( RecChksum == sum ){
-		return true;
-	}else{
-		printf("Wrong Checksum !!!   Calc: %d    Rec:%d\n",sum,RecChksum);
-		return false;
-	}
+      unsigned short int sum = 0;
+      for( int ii=0 ; ii<bytesReceived ; ii++ ){
+        sum += _data[ii];
+      }
+      if( RecChksum == sum ){
+        return true;
+      }else{
+        printf("Wrong Checksum !!!   Calc: %d    Rec:%d\n",sum,RecChksum);
+        return false;
+      }
     }
 
     void _CloseComPort(ComPortHandle comPort)
@@ -167,11 +154,11 @@ private:
 
     int _ReadComPort(ComPortHandle comPort, unsigned char* bytes, int bytesToRead)
     {
-      int bytesRead = read(comPort, bytes, bytesToRead);
+      int bytesRead = read(comPort, bytes, bytesToRead+1);
       
-//      printf("bitesRead was: %d\n",bytesRead);
-//      for(int jj=0;jj<bytesRead;jj++)
-//   	printf(" %d,",bytes[jj]);
+      printf("bytesRead was: %d\n",bytesRead);
+      for(int jj=0;jj<bytesRead;jj++)
+        printf(" %d,",bytes[jj]);
 //      printf("\n********************\n");
 
       // align
@@ -179,14 +166,14 @@ private:
       while( bytes[ii] != FTDI_PACKET_DELIMITER1 && bytes[ii+1] != FTDI_PACKET_DELIMITER2 ) {
           ii++;
       }
-//      printf("  ii is: %d  ",ii);
+      printf("  ii is: %d  ",ii);
       if( ii != 0 ) {
-          std::cout << "LOSING PACKET!" << std::endl;
-          bytesRead = read(comPort, bytes, ii);
-//          for(int jj=0;jj<bytesRead;jj++)
-//              printf(" %d,",bytes[jj]);
-//          printf("\n********************\n");
-	return 0;
+        std::cout << "LOSING PACKET!" << std::endl;
+        bytesRead = read(comPort, bytes, ii);
+          for(int jj=0;jj<bytesRead;jj++)
+              printf(" %d,",bytes[jj]);
+          printf("\n********************\n");
+          return 0;
       }
       return bytesRead;
 
