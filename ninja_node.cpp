@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <string>
-#include <Node/Node.h>
+#include <node/Node.h>
 
 #include "NinjaMsgs.pb.h"
 #include "FtdiDriver.h"
 #include "GetPot"
 #include <cstring>
 
-bool DEBUG = false;
+bool DEBUG = true;
 
 FtdiDriver  g_FtdiDriver;
 node::node  ninja_node;
