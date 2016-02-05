@@ -102,10 +102,10 @@ public:
         Pkt.m_cDelimiter1 = FTDI_PACKET_DELIMITER1;
         Pkt.m_cDelimiter2 = FTDI_PACKET_DELIMITER2;
         Pkt.m_cSize = sizeof(CommandPacket);
- 	Pkt.m_nSpeed = nSpeed;
+        Pkt.m_nSpeed = nSpeed;
         Pkt.m_nSteering = nSteering;
         Pkt.timestamp++;
-	Pkt.m_nChksum = _CalcChksum((unsigned char *)(&Pkt),sizeof(CommandPacket)-2); 
+        Pkt.m_nChksum = _CalcChksum((unsigned char *)(&Pkt),sizeof(CommandPacket)-2);
         //printf("\n\n checksum isssss ::::: %d  -   %d    ,   %d\n\n",Pkt.m_nChksum,(unsigned char)(Pkt.m_nChksum & 0xFF),(unsigned char)((Pkt.m_nChksum >> 8)& 0xFF));
         //printf("nSpeed: %f   nSteering: %f \n",Pkt.m_nSpeed, Pkt.m_nSteering);
         _WriteComPort(m_PortHandle,(unsigned char *)(&Pkt),sizeof(CommandPacket));
@@ -183,7 +183,7 @@ private:
       }
 //      printf("  ii is: %d  ",ii);
       if( ii != 0 ) {
-          std::cout << "LOSING PACKET!" << std::endl;
+//          std::cout << "LOSING PACKET!" << std::endl;
           bytesRead = read(comPort, bytes, ii);
 //          for(int jj=0;jj<bytesRead;jj++)
 //              printf(" %d,",bytes[jj]);

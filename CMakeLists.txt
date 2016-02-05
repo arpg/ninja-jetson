@@ -15,6 +15,7 @@ find_package( ZeroMQPP REQUIRED )
 find_package( HAL REQUIRED )
 find_package( Node REQUIRED )
 find_package( GLog REQUIRED )
+add_subdirectory( Gamepad )
 
 include_directories( ${ZeroMQ_INCLUDE_DIRS} )
 include_directories( ${ZeroMQPP_INCLUDE_DIRS} )
@@ -25,8 +26,8 @@ include_directories( ${CMAKE_BINARY_DIR} ) # for protobufs
 
 PROTOBUF_GENERATE_CPP( PROTO_SRCS PROTO_HDRS NinjaMsgs.proto )
 
-set( HDRS ${PROTO_HDRS} FtdiDriver.h )
-set( SRCS ninja_node.cpp ${PROTO_SRCS} )
+set( HDRS ${PROTO_HDRS} FtdiDriver.h JoystickHandler.h )
+set( SRCS JoystickHandler.cpp ninja_node.cpp ${PROTO_SRCS} )
 
 
 add_executable( ${PROJECT_NAME} ${HDRS} ${SRCS} )
@@ -36,4 +37,5 @@ target_link_libraries( ${PROJECT_NAME}
     ${HAL_LIBRARIES}
     ${Node_LIBRARIES} 
     ${GLog_LIBRARIES} 
+    Gamepad
     )
